@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>家計簿アプリ (PBL Step1)</title>
+    <title>家計簿アプリ (PBL Step2)</title>
 </head>
 <body>
 
@@ -36,7 +36,6 @@
     <ul id="expense-list"></ul>
 
     <script>
-        // DOM要素の取得
         const expenseForm = document.getElementById('expense-form');
         const amountInput = document.getElementById('amount');
         const categorySelect = document.getElementById('category');
@@ -48,17 +47,16 @@
 
         // フォーム送信時のイベントリスナー
         expenseForm.addEventListener('submit', function(e) {
-            e.preventDefault(); // ページのリロードを防ぐ
+            e.preventDefault();
 
-            // 1. 入力値の取得
             const amount = parseInt(amountInput.value, 10);
             const category = categorySelect.value;
             const date = dateInput.value;
 
-            // 2. ユーザ入力の検証（バリデーション）
+            // バリデーション
             if (isNaN(amount) || amount <= 0) {
                 alert('エラー：金額は1以上の数値を入力してください。');
-                return; // 処理を中断
+                return;
             }
             if (!category) {
                 alert('エラー：カテゴリを選択してください。');
@@ -69,27 +67,43 @@
                 return;
             }
 
-            // 3. データのオブジェクト化
+            // 【アップデート】削除時に特定できるよう、一意のID（タイムスタンプ文字列）を追加
             const newExpense = {
+                id: Date.now().toString(), 
                 amount: amount,
                 category: category,
                 date: date
             };
 
-            // 4. LocalStorageへの保存
             saveExpense(newExpense);
-
-            // 5. 画面一覧への追加表示
             addExpenseToDOM(newExpense);
-
-            // 6. フォームのクリア
             expenseForm.reset();
         });
 
-        // 画面に一件の支出を追加する関数
+        // 画面に一件の支出（と削除ボタン）を追加する関数
         function addExpenseToDOM(expense) {
             const li = document.createElement('li');
-            li.textContent = `${expense.date} | ${expense.category} | ${expense.amount}円`;
+            // 後で削除しやすいように、要素自体にデータIDを属性として持たせる
+            li.setAttribute('data-id', expense.id);
+            
+            // テキスト部分
+            const textNode = document.createTextNode(`${expense.date} | ${expense.category} | ${expense.amount}円 `);
+            li.appendChild(textNode);
+
+            // 【新規追加】削除ボタンの作成
+            const deleteButton = document.createElement('button');
+            deleteButton.textContent = '削除';
+            
+            // 削除ボタンがクリックされた時の処理
+            deleteButton.addEventListener('click', function() {
+                // 出力要件：「本当に削除しますか？」という確認ポップアップ
+                const confirmDelete = confirm('本当に削除しますか？');
+                if (confirmDelete) {
+                    deleteExpense(expense.id);
+                }
+            });
+
+            li.appendChild(deleteButton);
             expenseList.appendChild(li);
         }
 
@@ -104,6 +118,20 @@
             const expenses = getExpensesFromStorage();
             expenses.push(expense);
             localStorage.setItem('expenses', JSON.stringify(expenses));
+        }
+
+        // 【新規追加】指定されたIDのデータを削除する関数
+        function deleteExpense(id) {
+            // 1. LocalStorageからの削除（指定したID以外のデータで配列を再構成する）
+            let expenses = getExpensesFromStorage();
+            expenses = expenses.filter(expense => expense.id !== id);
+            localStorage.setItem('expenses', JSON.stringify(expenses));
+
+            // 2. 画面（DOM）からの非表示処理
+            const liToRemove = expenseList.querySelector(`[data-id="${id}"]`);
+            if (liToRemove) {
+                liToRemove.remove();
+            }
         }
 
         // 起動時にLocalStorageのデータを全件描画する関数
