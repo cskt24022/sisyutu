@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>家計簿アプリ (PBL Step1)</title>
+</head>
+<body>
+
+    <h2>支出登録フォーム</h2>
+    <form id="expense-form">
+        <div>
+            <label for="amount">金額:</label>
+            <input type="number" id="amount" placeholder="例: 1000">
+        </div>
+        <div>
+            <label for="category">カテゴリ:</label>
+            <select id="category">
+                <option value="">選択してください</option>
+                <option value="食費">食費</option>
+                <option value="日用品">日用品</option>
+                <option value="交通費">交通費</option>
+                <option value="交際費">交際費</option>
+                <option value="その他">その他</option>
+            </select>
+        </div>
+        <div>
+            <label for="date">日付:</label>
+            <input type="date" id="date">
+        </div>
+        <button type="submit">登録</button>
+    </form>
+
+    <hr>
+
+    <h2>登録された支出の一覧</h2>
+    <ul id="expense-list"></ul>
+
+    <script>
+        // DOM要素の取得
+        const expenseForm = document.getElementById('expense-form');
+        const amountInput = document.getElementById('amount');
+        const categorySelect = document.getElementById('category');
+        const dateInput = document.getElementById('date');
+        const expenseList = document.getElementById('expense-list');
+
+        // アプリ起動時にLocalStorageからデータを読み込んで表示
+        document.addEventListener('DOMContentLoaded', loadExpenses);
+
+        // フォーム送信時のイベントリスナー
+        expenseForm.addEventListener('submit', function(e) {
+            e.preventDefault(); // ページのリロードを防ぐ
+
+            // 1. 入力値の取得
+            const amount = parseInt(amountInput.value, 10);
+            const category = categorySelect.value;
+            const date = dateInput.value;
+
+            // 2. ユーザ入力の検証（バリデーション）
+            if (isNaN(amount) || amount <= 0) {
+                alert('エラー：金額は1以上の数値を入力してください。');
+                return; // 処理を中断
+            }
+            if (!category) {
+                alert('エラー：カテゴリを選択してください。');
+                return;
+            }
+            if (!date) {
+                alert('エラー：日付を選択してください。');
+                return;
+            }
+
+            // 3. データのオブジェクト化
+            const newExpense = {
+                amount: amount,
+                category: category,
+                date: date
+            };
+
+            // 4. LocalStorageへの保存
+            saveExpense(newExpense);
+
+            // 5. 画面一覧への追加表示
+            addExpenseToDOM(newExpense);
+
+            // 6. フォームのクリア
+            expenseForm.reset();
+        });
+
+        // 画面に一件の支出を追加する関数
+        function addExpenseToDOM(expense) {
+            const li = document.createElement('li');
+            li.textContent = `${expense.date} | ${expense.category} | ${expense.amount}円`;
+            expenseList.appendChild(li);
+        }
+
+        // LocalStorageから全データを取得する関数
+        function getExpensesFromStorage() {
+            const storedExpenses = localStorage.getItem('expenses');
+            return storedExpenses ? JSON.parse(storedExpenses) : [];
+        }
+
+        // データをLocalStorageに保存する関数
+        function saveExpense(expense) {
+            const expenses = getExpensesFromStorage();
+            expenses.push(expense);
+            localStorage.setItem('expenses', JSON.stringify(expenses));
+        }
+
+        // 起動時にLocalStorageのデータを全件描画する関数
+        function loadExpenses() {
+            const expenses = getExpensesFromStorage();
+            expenses.forEach(expense => addExpenseToDOM(expense));
+        }
+    </script>
+</body>
+</html>
